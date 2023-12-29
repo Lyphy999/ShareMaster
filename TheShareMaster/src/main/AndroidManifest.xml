@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="common.share">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- 网络权限：
        1、对于微信SDK来说：其中网络权限如果没有使用扫码登录功能非必要

@@ -2,8 +2,6 @@ package common.share
 
 import android.annotation.SuppressLint
 import android.content.Context
-import androidx.lifecycle.LiveData
-import common.share.core.AShareData
 import common.share.core.AbsEventResultHandler
 import common.share.core.IEventResultCallback
 import common.share.system.SystemShareData
