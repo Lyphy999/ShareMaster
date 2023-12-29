@@ -1,5 +1,6 @@
 package common.share
 
+import android.annotation.SuppressLint
 import android.content.Context
 import androidx.lifecycle.LiveData
 import common.share.core.AShareData
@@ -18,11 +19,12 @@ import common.share.wx.WxSdkConfig
  * </p>
  * ******************(^_^)***********************
  */
+@SuppressLint("StaticFieldLeak")
 object ShareMaster {
 
-    private var mContext: Context? = null
+    private var sAppContext: Context? = null
     fun initWxSdk(context: Context,config: WxSdkConfig.() -> Unit):Boolean {
-        mContext = context
+        sAppContext = context.applicationContext
         val aWxConfig = WxSdkConfig()
         aWxConfig.config()
         return WxSdk.initSdk(context, aWxConfig)
@@ -58,6 +60,6 @@ object ShareMaster {
         return systemShareData
     }
 
-    fun getContext() = mContext
+    fun getContext() = sAppContext
 
 }

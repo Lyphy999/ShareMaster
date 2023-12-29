@@ -11,6 +11,11 @@ import common.share.core.AShareData
  * ******************(^_^)***********************
  */
 class AWxShareData : AShareData<AWxShareData>() {
+    init {
+        //指定 微信分享的构建策略
+        theShareBuilderStrategy = WxShareBuilderStrategy()
+    }
+
     /**
      * 微信中的分享 文本
      */
@@ -22,9 +27,6 @@ class AWxShareData : AShareData<AWxShareData>() {
      */
     var wxEntryActivityClass: Class<*>? = null
 
-    init {
-        //指定 微信分享的构建策略
-        theShareBuilderStrategy = WxShareBuilderStrategy()
-    }
+
 
 }
