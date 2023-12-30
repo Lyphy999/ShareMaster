@@ -33,8 +33,25 @@ class SystemShareBuilderStrategy : IShareBuilderStrategy<SystemShareData> {
                         sendIntent
                     }
                 }
+                AShareData.DATA_TYPE_URL ->{
+                    if (theShareData.shareUrl.isBlank()) {
+                        errorCode = IEventResultCallback.CODE_SHARE_DATA_ERROR
+                        null
+                    } else {
+                        val sendIntent = Intent(Intent.ACTION_SEND)
+                        sendIntent.type = "text/plain"
+                        sendIntent.putExtra(Intent.EXTRA_TEXT, theShareData.shareUrl)
+                        sendIntent
+                    }
+                }
                 AShareData.DATA_TYPE_IMAGE -> {//分享图片
-
+//                    val sendIntent = Intent(Intent.ACTION_SEND_MULTIPLE)
+//                    val sendIntent = Intent(Intent.ACTION_SENDTO)
+                    val sendIntent = Intent(Intent.ACTION_SEND)
+//                    sendIntent.setData(Uri.)
+//                    sendIntent.setDataAndType()
+                    sendIntent.type = "image/*"
+//                    sendIntent.putExtra(Intent.EXTRA_STREAM,Uri)
                     null
                 }
                 else -> {
@@ -44,8 +61,43 @@ class SystemShareBuilderStrategy : IShareBuilderStrategy<SystemShareData> {
             }
         val isStartOk = if (sendIntent != null) {
             val context: Context? = theShareData.mContext ?: ShareMaster.getContext()
+            val shareToComponent = theShareData.shareToComponent
+            var targetIntents: ArrayList<Intent>? = null
+            if (shareToComponent != null || theShareData.targetAppPackageName.isNotBlank()) {
+                var isHasShareToComponent = false
+                if (shareToComponent != null) {
+                    if (shareToComponent.packageName.isNotBlank() && shareToComponent.className.isNotBlank()) {
+                        sendIntent.component = shareToComponent
+                        isHasShareToComponent = true
+                    }
+                }
+                if (!isHasShareToComponent) {
+                    val targetAppPackageName = shareToComponent?.packageName ?: theShareData.targetAppPackageName
+                    val s = context?.packageManager?.queryIntentActivities(sendIntent,0)
+                    s?.forEach {info ->
+                        if (targetIntents == null) {
+                            targetIntents = ArrayList(1)
+                        }
+                        val activityInfo = info.activityInfo
+                        if (activityInfo.packageName == targetAppPackageName) {
+                            val targetIntent = Intent(sendIntent)
+                            targetIntent.component = null
+                            targetIntent.setPackage(activityInfo.packageName)
+                            targetIntent.setClassName(activityInfo.packageName, activityInfo.name)
+                            targetIntents?.add(targetIntent)
+                        }
+                    }
+                }
+
+            }
             if (context != null) {
-                context.startActivity(Intent.createChooser(sendIntent,theShareData.shareTitle))
+                if (targetIntents == null) {
+                    context.startActivity(Intent.createChooser(sendIntent,theShareData.shareTitle))
+//                context.startActivity(sendIntent) //这个也可以弹出，但样式与上面的不一样
+                } else {
+                    val choose = Intent.createChooser(targetIntents!![0], theShareData.shareTitle)
+                    context.startActivity(choose)
+                }
                 true
             }
             else{
