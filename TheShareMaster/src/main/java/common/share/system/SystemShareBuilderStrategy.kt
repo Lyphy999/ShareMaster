@@ -2,6 +2,8 @@ package common.share.system
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import androidx.core.app.ShareCompat
 import common.share.ShareMaster
 import common.share.core.AShareData
 import common.share.core.IEventResultCallback
@@ -22,90 +24,93 @@ class SystemShareBuilderStrategy : IShareBuilderStrategy<SystemShareData> {
     ): Boolean {
         var errorCode: Int = IEventResultCallback.CODE_ERR_COMM
         val sendIntent: Intent? = when (theShareData.shareDataType) {
-                AShareData.DATA_TYPE_TEXT -> {
-                    if (theShareData.shareText.isBlank()) {
-                        errorCode = IEventResultCallback.CODE_SHARE_DATA_ERROR
-                        null
-                    } else {
-                        val sendIntent = Intent(Intent.ACTION_SEND)
-                        sendIntent.type = "text/plain"
-                        sendIntent.putExtra(Intent.EXTRA_TEXT, theShareData.shareText)
-                        sendIntent
-                    }
-                }
-                AShareData.DATA_TYPE_URL ->{
-                    if (theShareData.shareUrl.isBlank()) {
-                        errorCode = IEventResultCallback.CODE_SHARE_DATA_ERROR
-                        null
-                    } else {
-                        val sendIntent = Intent(Intent.ACTION_SEND)
-                        sendIntent.type = "text/plain"
-                        sendIntent.putExtra(Intent.EXTRA_TEXT, theShareData.shareUrl)
-                        sendIntent
-                    }
-                }
-                AShareData.DATA_TYPE_IMAGE -> {//分享图片
-//                    val sendIntent = Intent(Intent.ACTION_SEND_MULTIPLE)
-//                    val sendIntent = Intent(Intent.ACTION_SENDTO)
+            AShareData.DATA_TYPE_TEXT -> { //分享文本
+                if (theShareData.shareText.isBlank()) {
+                    errorCode = IEventResultCallback.CODE_SHARE_DATA_ERROR
+                    null
+                } else {
                     val sendIntent = Intent(Intent.ACTION_SEND)
-//                    sendIntent.setData(Uri.)
-//                    sendIntent.setDataAndType()
-                    sendIntent.type = "image/*"
-//                    sendIntent.putExtra(Intent.EXTRA_STREAM,Uri)
-                    null
-                }
-                else -> {
-                    errorCode = IEventResultCallback.CODE_ERR_UNSUPPORT
-                    null
+                    sendIntent.type = "text/plain"
+                    sendIntent.putExtra(Intent.EXTRA_TEXT, theShareData.shareText)
+                    sendIntent
                 }
             }
+
+            AShareData.DATA_TYPE_URL -> { //分享链接
+                if (theShareData.shareUrl.isBlank()) {
+                    errorCode = IEventResultCallback.CODE_SHARE_DATA_ERROR
+                    null
+                } else {
+                    val sendIntent = Intent(Intent.ACTION_SEND)
+                    sendIntent.type = "text/plain"
+                    sendIntent.putExtra(Intent.EXTRA_TEXT, theShareData.shareUrl)
+                    // EXTRA_TITLE 会显示在系统弹框的中间
+//                    sendIntent.putExtra(Intent.EXTRA_TITLE, theShareData.shareTitle)
+                    sendIntent
+                }
+            }
+
+            AShareData.DATA_TYPE_IMAGE -> {//分享图片
+//                ShareCompat.IntentBuilder(theShareData.mContext!!)
+//                    .setType("image/*")
+//                    .addStream(theShareData.dataUri!!)
+//                    .setChooserTitle(theShareData.shareTitle)
+//                    .startChooser()
+
+//                    val sendIntent = Intent(Intent.ACTION_SEND_MULTIPLE) //分享多个
+//                    val sendIntent = Intent(Intent.ACTION_SENDTO)
+                val sendIntent = Intent(Intent.ACTION_SEND)
+                sendIntent.type = "image/*"
+//                sendIntent.type = "*/*"
+//                sendIntent.setDataAndType(theShareData.dataUri, "image/*")//这个不行
+                sendIntent.putExtra(Intent.EXTRA_STREAM, theShareData.dataUri)
+//                    sendIntent.putExtra(Intent.EXTRA_STREAM,Uri)
+                sendIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)//
+                sendIntent
+            }
+
+            else -> {
+                errorCode = IEventResultCallback.CODE_ERR_UNSUPPORT
+                null
+            }
+        }
         val isStartOk = if (sendIntent != null) {
             val context: Context? = theShareData.mContext ?: ShareMaster.getContext()
             val shareToComponent = theShareData.shareToComponent
-            var targetIntents: ArrayList<Intent>? = null
-            if (shareToComponent != null || theShareData.targetAppPackageName.isNotBlank()) {
+            var targetIntents: List<Intent>? = null
+            if (shareToComponent != null) {//外部有指定 分享到的目标组件
+                val targetAppPackageName = shareToComponent.packageName
                 var isHasShareToComponent = false
-                if (shareToComponent != null) {
-                    if (shareToComponent.packageName.isNotBlank() && shareToComponent.className.isNotBlank()) {
-                        sendIntent.component = shareToComponent
-                        isHasShareToComponent = true
-                    }
+                if (targetAppPackageName.isNotBlank() && shareToComponent.className.isNotBlank()) {
+                    sendIntent.component = shareToComponent //只有当外部指定了 完整目标组件时，才赋值
+                    isHasShareToComponent = true
                 }
-                if (!isHasShareToComponent) {
-                    val targetAppPackageName = shareToComponent?.packageName ?: theShareData.targetAppPackageName
-                    val s = context?.packageManager?.queryIntentActivities(sendIntent,0)
-                    s?.forEach {info ->
-                        if (targetIntents == null) {
-                            targetIntents = ArrayList(1)
-                        }
-                        val activityInfo = info.activityInfo
-                        if (activityInfo.packageName == targetAppPackageName) {
-                            val targetIntent = Intent(sendIntent)
-                            targetIntent.component = null
-                            targetIntent.setPackage(activityInfo.packageName)
-                            targetIntent.setClassName(activityInfo.packageName, activityInfo.name)
-                            targetIntents?.add(targetIntent)
-                        }
-                    }
+                if (!isHasShareToComponent) {//目标组件不完整，则通过包名去查找匹配
+                    targetIntents = matchTargetIntents(context, targetAppPackageName, sendIntent)
                 }
-
             }
             if (context != null) {
-                if (targetIntents == null) {
-                    context.startActivity(Intent.createChooser(sendIntent,theShareData.shareTitle))
+                val targetIntentSize = targetIntents?.size ?: 0
+                if (targetIntentSize < 1) {
+                    context.startActivity(Intent.createChooser(sendIntent, theShareData.shareTitle))
 //                context.startActivity(sendIntent) //这个也可以弹出，但样式与上面的不一样
                 } else {
                     val choose = Intent.createChooser(targetIntents!![0], theShareData.shareTitle)
+                    //如果找到了多个匹配的目标组件
+                    if (targetIntentSize > 1) {
+                        choose.putExtra(
+                            Intent.EXTRA_INITIAL_INTENTS,
+                            targetIntents!!.toTypedArray()
+                        )
+                    }
                     context.startActivity(choose)
                 }
                 true
-            }
-            else{
+            } else {
                 errorCode = IEventResultCallback.CODE_ERR_SENT_FAILED
                 false
             }
-        }
-        else{
+        } else {
             false
         }
         if (!isStartOk) {
@@ -119,4 +124,22 @@ class SystemShareBuilderStrategy : IShareBuilderStrategy<SystemShareData> {
         return isStartOk
     }
 
+
+    private fun matchTargetIntents(
+        context: Context?,
+        targetPackageName: String,
+        actionIntent: Intent
+    ): List<Intent>? {
+        return context?.packageManager?.queryIntentActivities(actionIntent, 0)
+            ?.filter {
+//                it.resolvePackageName //这个 为 null
+                it.activityInfo.packageName == targetPackageName
+            }?.map {
+                val activityInfo = it.activityInfo
+                val targetIntent = Intent(actionIntent)
+                targetIntent.setPackage(activityInfo.packageName)
+                targetIntent.setClassName(activityInfo.packageName, activityInfo.name)
+                targetIntent
+            }
+    }
 }

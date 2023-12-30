@@ -1,14 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+
+    <!--    READ_EXTERNAL_STORAGE is deprecated (and is not granted) when targeting Android 13+.
+    If you need to query or interact with MediaStore or media files on the shared storage,
+    you should instead use one or more new storage permissions: READ_MEDIA_IMAGES, READ_MEDIA_VIDEO or READ_MEDIA_AUDIO.
+      -->
+    <!--    Inspection info:Scoped storage is enforced on Android 10+ (or Android 11+ if using requestLegacyExternalStorage). In particular, WRITE_EXTERNAL_STORAGE will no longer provide write access to all files; it will provide the equivalent of READ_EXTERNAL_STORAGE instead.  As of Android 13, if you need to query or interact with MediaStore or media files on the shared storage, you should be using instead one or more new storage permissions: * android.permission.READ_MEDIA_IMAGES * android.permission.READ_MEDIA_VIDEO * android.permission.READ_MEDIA_AUDIO  and then add maxSdkVersion="33" to the older permission. See the developer guide for how to do this: https://developer.android.com/about/versions/13/behavior-changes-13#granular-media-permissions  The MANAGE_EXTERNAL_STORAGE permission can be used to manage all files, but it is rarely necessary and most apps on Google Play are not allowed to use it. Most apps should instead migrate to use scoped storage. To modify or delete files, apps should request write access from the user as described at https://goo.gle/android-mediastore-createwriterequest.  To learn more, read these resources: Play policy: https://goo.gle/policy-storage-help Allowable use cases: https://goo.gle/policy-storage-usecases  Issue id: ScopedStorage  More info: https://goo.gle/android-storage-usecases  Vendor: Android Open Source Project Contact: https://groups.google.com/g/lint-dev Feedback: https://issuetracker.google.com/issues/new?component=192708-->
+
+        <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+
+            />
+
+        <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+            />
 
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
+        android:requestLegacyExternalStorage="true"
         android:supportsRtl="true"
         android:theme="@style/Theme.ShareMaster">
-        <activity android:name=".MainActivity"
+        <activity
+            android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -17,13 +34,32 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".wxapi.WXEntryActivity"
+        <activity
+            android:name=".wxapi.WXEntryActivity"
+            android:configChanges="fontScale|keyboardHidden|orientation|screenSize|layoutDirection|screenLayout"
             android:exported="true"
             android:launchMode="singleTask"
             android:taskAffinity="${applicationId}"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar"
-            android:configChanges="fontScale|keyboardHidden|orientation|screenSize|layoutDirection|screenLayout"
-            />
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <!--
+        1、android:authorities 标识ContentProvider的唯一性，可以自己任意定义，最好是全局唯一的。
+        2、android:name 是指之前定义的FileProvider 子类。
+        3、android:exported="false" 限制其他应用获取Provider。
+        4、android:grantUriPermissions="true" 授予其它应用访问Uri权限。
+        5、meta-data 囊括了别名应用表。
+        5.1、android:name 这个值是固定的，表示要解析file_path。
+        5.2、android:resource 自己定义实现的映射表
+         -->
+        <provider
+            android:name=".MyFileProvider"
+            android:authorities="${applicationId}.MyFileProvider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_path" />
+        </provider>
     </application>
 
 </manifest>

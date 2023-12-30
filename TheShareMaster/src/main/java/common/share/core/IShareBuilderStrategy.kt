@@ -10,5 +10,5 @@ package common.share.core
  * ******************(^_^)***********************
  */
 interface IShareBuilderStrategy<D : AShareData<D>> {
-    fun buildAndShare(theShareDat: D, resultCallback: IEventResultCallback?): Boolean
+    fun buildAndShare(theShareData: D, resultCallback: IEventResultCallback?): Boolean
 }

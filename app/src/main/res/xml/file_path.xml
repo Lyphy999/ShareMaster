@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+
+1、root-path 标签表示要给根目录下的子目录取别名(包括内部存储、自带外部存储、扩展外部存储，统称用"/"表示)，
+path 属性表示需要被更改的目录名，其值为:"."，表示不区分目录，name 属性表示将path 目录更改后的别名。
+2、假若有个文件路径：/storage/emulated/0/fish/myTxt.txt，而我们只配置了root-path 标签，
+那么最终该文件路径被替换为：/myroot/storage/emulated/0/fish/myTxt.txt。
+可以看出，因为path="."，因此任何目录前都被追加了myroot。
+
+参考链接：https://www.jianshu.com/p/d71afdf9c90a
+-->
+<paths>
+<!-- Element root-path is not allowed here    -->
+    <root-path name="myroot" path="." />
+
+<!--
+    1、external-path: Environment.getExternalStorageDirectory()，如/storage/emulated/0/fish
+    2、external-files-path: ContextCompat.getExternalFilesDirs(context, null)。
+    3、external-cache-path: ContextCompat.getExternalCacheDirs(context)。
+    4、files-path: context.getFilesDir()。
+    5、cache-path: context.getCacheDir()。
+-->
+
+    <external-path name="external_file" path="share" />
+    <external-files-path name="external_app_file" path="myfile" />
+    <external-cache-path name="external_app_cache" path="mycache/doc/" />
+    <files-path name="inner_app_file" path="." />
+    <cache-path name="inner_app_cache" path="." />
+</paths>
