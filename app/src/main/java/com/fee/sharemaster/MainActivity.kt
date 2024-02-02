@@ -4,6 +4,7 @@ import android.content.ComponentName
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
+import android.os.Build.VERSION_CODES.R
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
@@ -79,15 +80,17 @@ class MainActivity : AppCompatActivity(),View.OnClickListener{
 //                    shareDataType = AShareData.DATA_TYPE_URL
                     //分享图片
                     val rootFile = Environment.getExternalStorageDirectory()
-                    val imgFile = File(rootFile, "app_logo.png")
-                    val testFile = File(rootFile, "test.text")
+                    val picDirFile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+
+                    val imgFile = File(picDirFile, "app_logo.png")
+                    val testFile = File(picDirFile, "test.text")
                     //有权限了也不能创建文件
-//                    if (!testFile.exists()) {
+                    if (!testFile.exists()) {
 //                        val isSuc = testFile.createNewFile()
 //                        if (isSuc) {
 //
 //                        }
-//                    }
+                    }
                     //android.os.FileUriExposedException: file:///storage/emulated/0/app_logo.png exposed beyond app through ClipData.Item.getUri()
                     //     at android.os.StrictMode.onFileUriExposed(StrictMode.java:2141)
                     //Android7.0 之后 禁止如上

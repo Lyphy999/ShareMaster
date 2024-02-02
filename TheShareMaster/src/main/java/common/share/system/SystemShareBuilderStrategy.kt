@@ -1,5 +1,6 @@
 package common.share.system
 
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -64,7 +65,7 @@ class SystemShareBuilderStrategy : IShareBuilderStrategy<SystemShareData> {
 //                sendIntent.type = "*/*"
 //                sendIntent.setDataAndType(theShareData.dataUri, "image/*")//这个不行
                 sendIntent.putExtra(Intent.EXTRA_STREAM, theShareData.dataUri)
-//                    sendIntent.putExtra(Intent.EXTRA_STREAM,Uri)
+//                sendIntent.clipData = ClipData.newRawUri(theShareData.shareTitle,theShareData.dataUri)
                 sendIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)//
                 sendIntent
             }
@@ -92,10 +93,13 @@ class SystemShareBuilderStrategy : IShareBuilderStrategy<SystemShareData> {
             if (context != null) {
                 val targetIntentSize = targetIntents?.size ?: 0
                 if (targetIntentSize < 1) {
-                    context.startActivity(Intent.createChooser(sendIntent, theShareData.shareTitle))
+                    val chooseIntent = Intent.createChooser(sendIntent, theShareData.shareTitle)
+                    chooseIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(chooseIntent)
 //                context.startActivity(sendIntent) //这个也可以弹出，但样式与上面的不一样
                 } else {
                     val choose = Intent.createChooser(targetIntents!![0], theShareData.shareTitle)
+                    choose.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     //如果找到了多个匹配的目标组件
                     if (targetIntentSize > 1) {
                         choose.putExtra(
