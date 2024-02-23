@@ -19,6 +19,11 @@ import common.share.core.IShareBuilderStrategy
  * ******************(^_^)***********************
  */
 class SystemShareBuilderStrategy : IShareBuilderStrategy<SystemShareData> {
+
+    private val mGrantMode by lazy(LazyThreadSafetyMode.NONE) {
+        Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+    }
+
     override fun buildAndShare(
         theShareData: SystemShareData,
         resultCallback: IEventResultCallback?
@@ -66,7 +71,7 @@ class SystemShareBuilderStrategy : IShareBuilderStrategy<SystemShareData> {
 //                sendIntent.setDataAndType(theShareData.dataUri, "image/*")//这个不行
                 sendIntent.putExtra(Intent.EXTRA_STREAM, theShareData.dataUri)
 //                sendIntent.clipData = ClipData.newRawUri(theShareData.shareTitle,theShareData.dataUri)
-                sendIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)//
+                sendIntent.addFlags(mGrantMode)//
                 sendIntent
             }
 
@@ -85,10 +90,23 @@ class SystemShareBuilderStrategy : IShareBuilderStrategy<SystemShareData> {
                 if (targetAppPackageName.isNotBlank() && shareToComponent.className.isNotBlank()) {
                     sendIntent.component = shareToComponent //只有当外部指定了 完整目标组件时，才赋值
                     isHasShareToComponent = true
+                    context?.grantUriPermission(
+                        targetAppPackageName,
+                        theShareData.dataUri,
+                        mGrantMode
+                    )
                 }
                 if (!isHasShareToComponent) {//目标组件不完整，则通过包名去查找匹配
-                    targetIntents = matchTargetIntents(context, targetAppPackageName, sendIntent)
+                    targetIntents = matchTargetIntents(
+                        context,
+                        targetAppPackageName,
+                        sendIntent,
+                        theShareData.dataUri
+                    )
                 }
+            } else {
+                //目的为让目标App被临时赋予权限
+                matchTargetIntents(context, "", sendIntent, theShareData.dataUri)
             }
             if (context != null) {
                 val targetIntentSize = targetIntents?.size ?: 0
@@ -132,18 +150,23 @@ class SystemShareBuilderStrategy : IShareBuilderStrategy<SystemShareData> {
     private fun matchTargetIntents(
         context: Context?,
         targetPackageName: String,
-        actionIntent: Intent
+        actionIntent: Intent,
+        dataUri: Uri? = null
     ): List<Intent>? {
-        return context?.packageManager?.queryIntentActivities(actionIntent, 0)
-            ?.filter {
+        val s = context?.packageManager?.queryIntentActivities(actionIntent, 0)
+        return s?.filter {
 //                it.resolvePackageName //这个 为 null
-                it.activityInfo.packageName == targetPackageName
-            }?.map {
-                val activityInfo = it.activityInfo
-                val targetIntent = Intent(actionIntent)
-                targetIntent.setPackage(activityInfo.packageName)
-                targetIntent.setClassName(activityInfo.packageName, activityInfo.name)
-                targetIntent
+            val pkgName = it.activityInfo.packageName
+            if (dataUri != null) {
+                context.grantUriPermission(pkgName, dataUri, mGrantMode)
             }
+            pkgName == targetPackageName
+        }?.map {
+            val activityInfo = it.activityInfo
+            val targetIntent = Intent(actionIntent)
+            targetIntent.setPackage(activityInfo.packageName)
+            targetIntent.setClassName(activityInfo.packageName, activityInfo.name)
+            targetIntent
+        }
     }
 }

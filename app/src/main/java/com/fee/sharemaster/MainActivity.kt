@@ -4,7 +4,6 @@ import android.content.ComponentName
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
-import android.os.Build.VERSION_CODES.R
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
@@ -12,7 +11,6 @@ import android.util.Log
 import android.view.View
 import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider
-import androidx.databinding.DataBindingUtil
 import com.fee.sharemaster.databinding.ActivityMainBinding
 import com.fee.sharemaster.wxapi.WXEntryActivity
 import common.share.ShareMaster
@@ -28,8 +26,9 @@ class MainActivity : AppCompatActivity(),View.OnClickListener{
         super.onCreate(savedInstanceState)
         Log.i(TAG, " --> onCreate() ")
 
-        activityMainBinding = DataBindingUtil.setContentView(this, R.layout.activity_main)
-
+//        activityMainBinding = DataBindingUtil.setContentView(this, R.layout.activity_main)
+        activityMainBinding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(activityMainBinding.root)
         activityMainBinding.btnWxShare.setOnClickListener(this)
         activityMainBinding.btnSysShare.setOnClickListener(this)
         activityMainBinding.btnAliShare.setOnClickListener(this)
@@ -78,6 +77,9 @@ class MainActivity : AppCompatActivity(),View.OnClickListener{
                     //分享链接
 //                    shareUrl = "https://www.baidu.com" //分享链接
 //                    shareDataType = AShareData.DATA_TYPE_URL
+
+                    //com.fee.sharemaster.MyFileProvider uri:
+                    // content://com.fee.sharemaster.MyFileProvider/myroot/storage/emulated/0/Pictures/app_logo.png from pid=11252, uid=1000 requires the provider be exported, or grantUriPermission()
                     //分享图片
                     val rootFile = Environment.getExternalStorageDirectory()
                     val picDirFile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
